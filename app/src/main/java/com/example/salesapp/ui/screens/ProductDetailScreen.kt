@@ -1,25 +1,23 @@
-// Vị trí: .../ui/screens/detail/ProductDetailScreen.kt
-package com.example.salesapp.ui.screens.detail
+package com.example.salesapp.ui.screens.product
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.salesapp.viewmodel.ProductDetailViewModel
-import kotlinx.coroutines.flow.collectLatest
 import java.text.NumberFormat
 import java.util.*
 
@@ -28,150 +26,120 @@ import java.util.*
 fun ProductDetailScreen(
     viewModel: ProductDetailViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
+    // <<< SỬA LỖI TẠI ĐÂY: Thêm tham số onNavigateToCart >>>
     onNavigateToCart: () -> Unit
 ) {
     val uiState = viewModel.uiState
     val product = uiState.product
+    val context = LocalContext.current
     val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
 
-    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(uiState.addToCartSuccess, uiState.addToCartError) {
+        if (uiState.addToCartSuccess) {
+            Toast.makeText(context, "Đã thêm vào giỏ hàng!", Toast.LENGTH_SHORT).show()
+            viewModel.clearAddToCartStatus()
 
-    LaunchedEffect(key1 = true) {
-        viewModel.eventFlow.collectLatest { event ->
-            when(event) {
-                is ProductDetailViewModel.UiEvent.ShowSnackbar -> {
-                    val result = snackbarHostState.showSnackbar(
-                        message = event.message,
-                        actionLabel = "Xem Giỏ Hàng", // <-- THÊM NÚT
-                        duration = SnackbarDuration.Short
-                    )
-                    // Nếu người dùng nhấn "Xem Giỏ Hàng"
-                    if (result == SnackbarResult.ActionPerformed) {
-                        onNavigateToCart()
-                    }
-                }
-            }
+            // <<< SỬ DỤNG THAM SỐ MỚI >>>
+            // Tự động chuyển đến giỏ hàng sau khi thêm thành công
+            onNavigateToCart()
+        }
+        if (uiState.addToCartError != null) {
+            Toast.makeText(context, "Lỗi: ${uiState.addToCartError}", Toast.LENGTH_LONG).show()
+            viewModel.clearAddToCartStatus()
         }
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-
         topBar = {
             TopAppBar(
-                title = { Text("Chi tiết sản phẩm") },
+                title = { Text(product?.productName ?: "Chi tiết sản phẩm") },
                 navigationIcon = {
-                    // Nút Back
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Quay lại")
                     }
                 }
             )
         },
-        // Nút "Thêm vào giỏ hàng" ở đáy màn hình
         bottomBar = {
             if (product != null) {
-                Button(
-                    onClick = { viewModel.addToCart() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .height(50.dp),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Icon(Icons.Outlined.ShoppingCart, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Thêm vào giỏ hàng", fontSize = 16.sp)
+                Surface(shadowElevation = 8.dp) {
+                    Button(
+                        onClick = { viewModel.addToCart(product.productID, 1) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .height(50.dp),
+                        enabled = !uiState.isAddingToCart
+                    ) {
+                        if (uiState.isAddingToCart) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Text("Thêm vào giỏ hàng", fontSize = 16.sp)
+                        }
+                    }
                 }
             }
         }
     ) { paddingValues ->
-
         when {
-            // Đang tải...
             uiState.isLoading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
             }
-
-            // Lỗi...
             uiState.errorMessage != null -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(Modifier.fillMaxSize(), Alignment.Center) {
                     Text(uiState.errorMessage, color = MaterialTheme.colorScheme.error)
                 }
             }
-
-            // Thành công...
-            product != null -> {
-                // Dùng LazyColumn để có thể cuộn
+            product == null -> {
+                Box(Modifier.fillMaxSize(), Alignment.Center) {
+                    Text("Không tìm thấy sản phẩm.")
+                }
+            }
+            else -> {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(bottom = 80.dp) // Tránh bị nút BottomBar che
+                        .padding(paddingValues),
+                    contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    // 1. Ảnh sản phẩm
                     item {
                         AsyncImage(
                             model = product.imageURL,
                             contentDescription = product.productName,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .aspectRatio(1f), // Ảnh vuông
+                                .aspectRatio(1f),
                             contentScale = ContentScale.Crop
                         )
                     }
-
-                    // 2. Tên và Giá
                     item {
-                        Column(modifier = Modifier.padding(16.dp)) {
+                        Column(Modifier.padding(16.dp)) {
                             Text(
                                 text = product.productName,
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(Modifier.height(8.dp))
                             Text(
                                 text = formatter.format(product.price),
-                                style = MaterialTheme.typography.headlineMedium,
+                                style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Medium
                             )
-                        }
-                    }
-
-                    item { Divider() }
-
-                    // 3. Mô tả chi tiết
-                    item {
-                        Column(modifier = Modifier.padding(16.dp)) {
+                            Spacer(Modifier.height(16.dp))
                             Text(
-                                "Mô tả chi tiết",
+                                text = "Mô tả",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(Modifier.height(8.dp))
                             Text(
-                                text = product.fullDescription ?: "Không có mô tả.",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        }
-                    }
-
-                    item { Divider() }
-
-                    // 4. Thông số kỹ thuật
-                    item {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                "Thông số kỹ thuật",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = product.technicalSpecifications ?: "Không có thông số.",
+                                // Lỗi "Unresolved reference 'description'" (image_b44be7.png) sẽ hết
+                                // sau khi bạn sửa file ProductDetailDto.kt
+                                text = product.description ?: "Sản phẩm chưa có mô tả.",
                                 style = MaterialTheme.typography.bodyLarge
                             )
                         }

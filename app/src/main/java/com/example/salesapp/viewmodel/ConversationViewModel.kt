@@ -1,4 +1,3 @@
-// Vị trí: .../viewmodel/ConversationViewModel.kt
 package com.example.salesapp.viewmodel
 
 import androidx.compose.runtime.getValue
@@ -26,21 +25,17 @@ data class ConversationUiState(
 @HiltViewModel
 class ConversationViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
-    private val signalRService: SignalRService, // Tiêm SignalR
+    private val signalRService: SignalRService,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     var uiState by mutableStateOf(ConversationUiState())
         private set
 
-    // Lấy ID của người kia từ navigation
     private val otherUserId: Int = savedStateHandle.get<String>("userId")?.toIntOrNull() ?: 0
 
     init {
-        // 1. Tải lịch sử chat
         fetchHistory()
-
-        // 2. Lắng nghe tin nhắn real-time
         listenForMessages()
     }
 
@@ -60,40 +55,50 @@ class ConversationViewModel @Inject constructor(
         }
     }
 
-    // Lắng nghe tin nhắn mới từ SignalR
     private fun listenForMessages() {
         signalRService.messageFlow
             .onEach { newMessage ->
                 // Chỉ thêm tin nhắn nếu nó thuộc về cuộc trò chuyện này
                 if (newMessage.senderID == otherUserId || newMessage.recipientID == otherUserId) {
-                    // Thêm tin nhắn mới vào cuối danh sách
-                    uiState = uiState.copy(
-                        messages = uiState.messages + newMessage
-                    )
+                    if (uiState.messages.none { it.chatMessageID == newMessage.chatMessageID }) {
+                        uiState = uiState.copy(
+                            messages = uiState.messages + newMessage
+                        )
+                    }
                 }
             }
             .launchIn(viewModelScope)
     }
 
-    // Cập nhật nội dung đang gõ
     fun onMessageChange(newMessage: String) {
         uiState = uiState.copy(currentMessage = newMessage)
     }
 
-    // Gửi tin nhắn
     fun sendMessage() {
         val messageText = uiState.currentMessage.trim()
         if (messageText.isEmpty() || otherUserId == 0) return
 
-        // Xóa text khỏi ô input
+        // Lưu lại tin nhắn đang gõ, phòng trường hợp gửi lỗi
+        val originalMessage = uiState.currentMessage
+        // Xóa text khỏi ô input ngay lập tức
         uiState = uiState.copy(currentMessage = "")
 
         viewModelScope.launch {
             // Gửi qua REST API
-            // Backend sẽ tự động đẩy tin nhắn này về cho chúng ta (và người kia)
-            // qua SignalR, hàm listenForMessages() sẽ bắt được nó.
-            chatRepository.sendMessage(otherUserId, messageText)
-            // (Chúng ta có thể xử lý lỗi ở đây nếu muốn)
+            val result = chatRepository.sendMessage(otherUserId, messageText)
+
+            // <<< SỬA LỖI CHAT TẠI ĐÂY >>>
+            result.onSuccess { sentMessageDto ->
+                // Thêm tin nhắn trả về từ API vào danh sách
+                // (SignalR có thể cũng sẽ gửi về, hàm listenForMessages đã check trùng)
+                uiState = uiState.copy(
+                    messages = uiState.messages + sentMessageDto
+                )
+            }.onFailure {
+                // Gửi thất bại, trả lại tin nhắn cho người dùng gõ
+                uiState = uiState.copy(currentMessage = originalMessage)
+                // (Bạn có thể thêm 1 dòng uiState = uiState.copy(errorMessage = "Gửi lỗi") ở đây)
+            }
         }
     }
 }

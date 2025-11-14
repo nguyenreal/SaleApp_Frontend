@@ -10,5 +10,6 @@ data class ProductDetailDto(
     @field:Json(name = "technicalSpecifications") val technicalSpecifications: String?,
     @field:Json(name = "price") val price: Double,
     @field:Json(name = "imageURL") val imageURL: String?,
-    @field:Json(name = "categoryName") val categoryName: String?
+    @field:Json(name = "categoryName") val categoryName: String?,
+    @Json(name = "description") val description: String?
 )

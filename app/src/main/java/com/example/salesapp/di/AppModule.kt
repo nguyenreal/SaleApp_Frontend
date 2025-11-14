@@ -11,6 +11,7 @@ import com.example.salesapp.data.remote.api.AuthService
 import com.example.salesapp.data.remote.api.CartService
 import com.example.salesapp.data.remote.api.ChatService
 import com.example.salesapp.data.remote.api.ProductService
+import com.example.salesapp.data.remote.api.StoreLocationService
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -100,4 +101,11 @@ object AppModule {
     fun provideChatService(retrofit: Retrofit): ChatService {
         return retrofit.create(ChatService::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideStoreLocationService(retrofit: Retrofit): StoreLocationService {
+        return retrofit.create(StoreLocationService::class.java)
+    }
+
 }

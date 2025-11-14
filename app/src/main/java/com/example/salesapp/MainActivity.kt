@@ -9,7 +9,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -19,11 +18,19 @@ import androidx.navigation.compose.rememberNavController
 import com.example.salesapp.ui.screens.MainScreen
 import com.example.salesapp.ui.screens.cart.CartScreen
 import com.example.salesapp.ui.screens.conversation.ConversationScreen
-import com.example.salesapp.ui.screens.detail.ProductDetailScreen
 import com.example.salesapp.ui.screens.login.LoginScreen
 import com.example.salesapp.ui.screens.register.RegisterScreen
 import com.example.salesapp.ui.theme.SalesAppTheme
 import dagger.hilt.android.AndroidEntryPoint
+import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import com.example.salesapp.ui.screens.product.ProductDetailScreen
 
 object Routes {
     const val LOGIN = "login"
@@ -36,9 +43,75 @@ object Routes {
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        // Xử lý kết quả (tùy chọn)
+        if (permissions[Manifest.permission.POST_NOTIFICATIONS] == true) {
+            // Quyền thông báo OK
+        } else {
+            // Quyền thông báo bị từ chối
+            Toast.makeText(this, "Bạn sẽ không nhận được thông báo", Toast.LENGTH_SHORT).show()
+        }
+
+        if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true) {
+            // Quyền vị trí OK
+        } else {
+            // Quyền vị trí bị từ chối
+            Toast.makeText(this, "Không thể hiển thị vị trí của bạn", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun askAppPermissions() {
+        val permissionsToRequest = mutableListOf<String>()
+
+        // Quyền Thông báo (cho Badge)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+
+        // Chỉ hỏi nếu có quyền chưa được cấp
+        if (permissionsToRequest.isNotEmpty()) {
+            requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
+        }
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelId = "cart_channel"
+            val name = "Giỏ hàng"
+            val descriptionText = "Thông báo số lượng giỏ hàng"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel(channelId, name, importance).apply {
+                description = descriptionText
+                setShowBadge(true)
+            }
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+
+        askAppPermissions()
+        createNotificationChannel()
 
         setContent {
             SalesAppTheme {
@@ -109,7 +182,6 @@ fun AppNavigation() {
                 onNavigateBack = {
                     navController.popBackStack()
                 },
-                // --- THÊM CALLBACK NÀY VÀO ---
                 onNavigateToCart = {
                     navController.navigate(Routes.CART)
                 }

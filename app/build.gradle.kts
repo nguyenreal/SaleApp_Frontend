@@ -3,8 +3,8 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("com.google.dagger.hilt.android") // <-- Hilt phải ở TRƯỚC Kapt (ĐÚNG)
     id("kotlin-kapt")
-    id("com.google.dagger.hilt.android")
 }
 
 kapt {
@@ -14,13 +14,13 @@ kapt {
 android {
     // <<< ĐẢM BẢO DÒNG NÀY ĐÚNG VỚI PACKAGE CỦA BẠN >>>
     namespace = "com.example.salesapp"
-    compileSdk = 34 // <<< Chúng ta giữ nguyên SDK 34
+    compileSdk = 35 //
 
     defaultConfig {
         // <<< ĐẢM BẢO DÒNG NÀY ĐÚNG VỚI PACKAGE CỦA BẠN >>>
         applicationId = "com.example.salesapp"
-        minSdk = 26
-        targetSdk = 34 // <<< Giữ nguyên SDK 34
+        minSdk = 24
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -83,7 +83,7 @@ dependencies {
 
     // --- Hilt (Giữ nguyên) ---
     implementation("com.google.dagger:hilt-android:2.51.1")
-    implementation(libs.firebase.ai)
+    implementation("androidx.compose.foundation:foundation")
     kapt("com.google.dagger:hilt-compiler:2.51.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
@@ -102,6 +102,10 @@ dependencies {
     // --- DataStore (Giữ nguyên) ---
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    kapt("androidx.hilt:hilt-compiler:1.2.0")
+
     // --- Thư viện Test (Giữ nguyên và đồng bộ BOM) ---
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
@@ -110,4 +114,7 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    implementation("com.google.maps.android:maps-compose:4.3.3")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
 }
