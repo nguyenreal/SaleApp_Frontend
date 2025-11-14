@@ -75,6 +75,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
 
     // --- Các thư viện của chúng ta (Đã hạ cấp) ---
     implementation("androidx.navigation:navigation-compose:2.7.7")
@@ -82,6 +83,7 @@ dependencies {
 
     // --- Hilt (Giữ nguyên) ---
     implementation("com.google.dagger:hilt-android:2.51.1")
+    implementation(libs.firebase.ai)
     kapt("com.google.dagger:hilt-compiler:2.51.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 

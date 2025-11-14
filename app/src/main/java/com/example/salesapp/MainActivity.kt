@@ -16,6 +16,8 @@ import androidx.compose.ui.platform.LocalContext // <-- Thêm
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.salesapp.ui.screens.MainScreen
+import com.example.salesapp.ui.screens.detail.ProductDetailScreen
 import com.example.salesapp.ui.screens.login.LoginScreen
 import com.example.salesapp.ui.screens.register.RegisterScreen // <-- Thêm
 import com.example.salesapp.ui.theme.SalesAppTheme
@@ -50,7 +52,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
-    val context = LocalContext.current // Để hiển thị Toast
+    val context = LocalContext.current
 
     NavHost(
         navController = navController,
@@ -65,29 +67,48 @@ fun AppNavigation() {
                     }
                 },
                 onNavigateToRegister = {
-                    navController.navigate(Routes.REGISTER) // Chuyển sang Đăng ký
+                    navController.navigate(Routes.REGISTER)
                 }
             )
         }
 
-        // --- THÊM ROUTE NÀY ---
         composable(route = Routes.REGISTER) {
             RegisterScreen(
                 onRegisterSuccess = {
-                    // <<< DÒNG NÀY ĐANG HIỂN THỊ THÔNG BÁO >>>
                     Toast.makeText(context, "Đăng ký thành công!", Toast.LENGTH_SHORT).show()
                     navController.popBackStack()
                 },
                 onNavigateBack = {
-                    navController.popBackStack() // Quay lại màn hình Login
+                    navController.popBackStack()
                 }
             )
         }
 
         composable(route = Routes.HOME) {
-            Surface(modifier = Modifier.fillMaxSize()) {
-                Text(text = "Đã Đăng Nhập Thành Công! Chào mừng tới Home.")
-            }
+            MainScreen(
+                // <<< SỬA LẠI DÒNG NÀY: Thêm : Int >>>
+                onProductClick = { productId: Int ->
+                    navController.navigate("${Routes.PRODUCT_DETAIL}/$productId")
+                },
+                onCartClick = {
+                    Toast.makeText(context, "Mở giỏ hàng", Toast.LENGTH_SHORT).show() // <-- Đã sửa
+                }
+            )
+        }
+
+        composable(
+            route = "${Routes.PRODUCT_DETAIL}/{productId}",
+        ) {
+            // Thay thế Text() bằng màn hình thật
+            ProductDetailScreen(
+                onNavigateBack = {
+                    navController.popBackStack() // Quay lại
+                },
+                onAddToCart = { productId ->
+                    // TODO: Gọi ViewModel để thêm vào giỏ hàng
+                    Toast.makeText(context, "Thêm $productId vào giỏ", Toast.LENGTH_SHORT).show()
+                }
+            )
         }
     }
 }

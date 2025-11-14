@@ -5,7 +5,10 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.salesapp.data.local.UserPreferencesRepository
+import com.example.salesapp.data.remote.AuthInterceptor
 import com.example.salesapp.data.remote.api.AuthService
+import com.example.salesapp.data.remote.api.CartService
 import com.example.salesapp.data.remote.api.ProductService
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -41,12 +44,22 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpClient(
+        // Hilt sẽ tự động "tiêm" Interceptor và Repo vào đây
+        authInterceptor: AuthInterceptor,
+        prefsRepository: UserPreferencesRepository
+    ): OkHttpClient {
+
+        // Tạo một interceptor thứ hai, chỉ để GHI LOG (như cũ)
         val logging = HttpLoggingInterceptor()
-        logging.setLevel(HttpLoggingInterceptor.Level.BODY) // Log request/response ra Logcat
+        logging.setLevel(HttpLoggingInterceptor.Level.BODY)
+
         return OkHttpClient.Builder()
+            // --- THÊM DÒNG NÀY ---
+            // Interceptor xác thực sẽ chạy TRƯỚC
+            .addInterceptor(authInterceptor)
+            // Interceptor log sẽ chạy SAU (để ta thấy header đã được thêm)
             .addInterceptor(logging)
-            // Sắp tới chúng ta sẽ thêm Interceptor để tự động gắn Token ở đây
             .build()
     }
 
@@ -77,5 +90,13 @@ object AppModule {
     @Singleton
     fun provideProductService(retrofit: Retrofit): ProductService {
         return retrofit.create(ProductService::class.java)
+    }
+
+    // (Thêm vào bên dưới hàm provideProductService)
+
+    @Provides
+    @Singleton
+    fun provideCartService(retrofit: Retrofit): CartService {
+        return retrofit.create(CartService::class.java)
     }
 }
