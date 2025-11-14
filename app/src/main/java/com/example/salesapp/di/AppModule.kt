@@ -45,20 +45,14 @@ object AppModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(
-        // Hilt sẽ tự động "tiêm" Interceptor và Repo vào đây
-        authInterceptor: AuthInterceptor,
-        prefsRepository: UserPreferencesRepository
+        authInterceptor: AuthInterceptor
     ): OkHttpClient {
 
-        // Tạo một interceptor thứ hai, chỉ để GHI LOG (như cũ)
         val logging = HttpLoggingInterceptor()
         logging.setLevel(HttpLoggingInterceptor.Level.BODY)
 
         return OkHttpClient.Builder()
-            // --- THÊM DÒNG NÀY ---
-            // Interceptor xác thực sẽ chạy TRƯỚC
             .addInterceptor(authInterceptor)
-            // Interceptor log sẽ chạy SAU (để ta thấy header đã được thêm)
             .addInterceptor(logging)
             .build()
     }

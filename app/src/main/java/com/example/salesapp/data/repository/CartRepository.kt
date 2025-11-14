@@ -5,6 +5,7 @@ import com.example.salesapp.data.remote.api.CartService
 import com.example.salesapp.data.remote.dto.AddCartItemRequestDto
 import com.example.salesapp.data.remote.dto.CartDto
 import com.example.salesapp.data.remote.dto.ErrorResponse
+import com.example.salesapp.data.remote.dto.UpdateCartItemRequestDto
 import com.squareup.moshi.Moshi
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,6 +34,49 @@ class CartRepository @Inject constructor(
         }
     }
 
+    suspend fun getMyCart(): Result<CartDto> {
+        return try {
+            val response = cartService.getMyCart()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                val errorMessage = parseErrorResponse(response.errorBody()?.string())
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Lỗi kết nối: ${e.message}"))
+        }
+    }
+
+    suspend fun updateItemQuantity(cartItemId: Int, quantity: Int): Result<CartDto> {
+        return try {
+            val request = UpdateCartItemRequestDto(quantity = quantity)
+            val response = cartService.updateItemQuantity(cartItemId, request)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                val errorMessage = parseErrorResponse(response.errorBody()?.string())
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Lỗi kết nối: ${e.message}"))
+        }
+    }
+
+    suspend fun removeItemFromCart(cartItemId: Int): Result<CartDto> {
+        return try {
+            val response = cartService.removeItemFromCart(cartItemId)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                val errorMessage = parseErrorResponse(response.errorBody()?.string())
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Lỗi kết nối: ${e.message}"))
+        }
+    }
+
     // Hàm helper parse lỗi (copy từ ProductRepository)
     private fun parseErrorResponse(errorBody: String?): String {
         if (errorBody == null) return "Lỗi không xác định"
@@ -51,4 +95,5 @@ class CartRepository @Inject constructor(
             "Lỗi không thể đọc phản hồi (Bad Request)"
         }
     }
+
 }

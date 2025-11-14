@@ -4,10 +4,12 @@ package com.example.salesapp.ui.screens.detail
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack // <-- Icon MỚI
-import androidx.compose.material.icons.outlined.ShoppingCart // <-- Icon MỚI
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -17,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.salesapp.viewmodel.ProductDetailViewModel
+import kotlinx.coroutines.flow.collectLatest
 import java.text.NumberFormat
 import java.util.*
 
@@ -25,13 +28,35 @@ import java.util.*
 fun ProductDetailScreen(
     viewModel: ProductDetailViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
-    onAddToCart: (Int) -> Unit
+    onNavigateToCart: () -> Unit
 ) {
     val uiState = viewModel.uiState
     val product = uiState.product
     val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(key1 = true) {
+        viewModel.eventFlow.collectLatest { event ->
+            when(event) {
+                is ProductDetailViewModel.UiEvent.ShowSnackbar -> {
+                    val result = snackbarHostState.showSnackbar(
+                        message = event.message,
+                        actionLabel = "Xem Giỏ Hàng", // <-- THÊM NÚT
+                        duration = SnackbarDuration.Short
+                    )
+                    // Nếu người dùng nhấn "Xem Giỏ Hàng"
+                    if (result == SnackbarResult.ActionPerformed) {
+                        onNavigateToCart()
+                    }
+                }
+            }
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+
         topBar = {
             TopAppBar(
                 title = { Text("Chi tiết sản phẩm") },
@@ -47,7 +72,7 @@ fun ProductDetailScreen(
         bottomBar = {
             if (product != null) {
                 Button(
-                    onClick = { onAddToCart(product.productID) },
+                    onClick = { viewModel.addToCart() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)

@@ -8,8 +8,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.salesapp.data.remote.dto.ProductDetailDto
+import com.example.salesapp.data.repository.CartRepository
 import com.example.salesapp.data.repository.ProductRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,12 +25,15 @@ data class ProductDetailUiState(
 @HiltViewModel
 class ProductDetailViewModel @Inject constructor(
     private val productRepository: ProductRepository,
-    // SavedStateHandle dùng để lấy tham số từ navigation (ví dụ: "productId")
+    private val cartRepository: CartRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     var uiState by mutableStateOf(ProductDetailUiState())
         private set
+
+    private val _eventFlow = MutableSharedFlow<UiEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
 
     init {
         // Tự động lấy "productId" từ route
@@ -55,5 +61,30 @@ class ProductDetailViewModel @Inject constructor(
                 }
             )
         }
+    }
+    fun addToCart() {
+        // Lấy sản phẩm hiện tại
+        val product = uiState.product ?: return
+
+        viewModelScope.launch {
+            // (Chúng ta sẽ thêm logic chọn số lượng sau, tạm thời là 1)
+            val result = cartRepository.addItemToCart(product.productID, 1)
+
+            result.fold(
+                onSuccess = {
+                    // Thêm thành công! Gửi sự kiện cho UI
+                    _eventFlow.emit(UiEvent.ShowSnackbar("Đã thêm ${product.productName} vào giỏ!"))
+                },
+                onFailure = { error ->
+                    // Thêm thất bại! Gửi sự kiện cho UI
+                    _eventFlow.emit(UiEvent.ShowSnackbar("Lỗi: ${error.message}"))
+                }
+            )
+        }
+    }
+
+    // --- THÊM LỚP SEALED NÀY VÀO TRONG CÙNG FILE ---
+    sealed class UiEvent {
+        data class ShowSnackbar(val message: String) : UiEvent()
     }
 }
