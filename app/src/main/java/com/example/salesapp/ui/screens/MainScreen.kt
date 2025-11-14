@@ -10,13 +10,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.salesapp.ui.screens.chat.ChatListScreen
 import com.example.salesapp.ui.screens.home.HomeScreen
+import com.example.salesapp.viewmodel.MainViewModel
 
 // Định nghĩa 3 tab chính của app
 sealed class MainAppRoutes(val route: String, val label: String, val icon: ImageVector) {
@@ -34,8 +37,11 @@ val mainAppTabs = listOf(
 
 @Composable
 fun MainScreen(
+    viewModel: MainViewModel = hiltViewModel(),
+
     onProductClick: (Int) -> Unit, // <-- Phải là (Int) -> Unit
-    onCartClick: () -> Unit
+    onCartClick: () -> Unit,
+    onChatUserClick: (Int, String) -> Unit
 ) {
     val mainNavController = rememberNavController() // Bộ điều khiển nav cho 3 tab
 
@@ -81,10 +87,10 @@ fun MainScreen(
 
             // Tab 2: Chat (Placeholder)
             composable(MainAppRoutes.Chat.route) {
-                // (Chúng ta sẽ implement màn hình Chat ở đây)
-                Text("Màn hình Chat")
+                ChatListScreen(
+                    onChatUserClick = onChatUserClick // Truyền callback
+                )
             }
-
             // Tab 3: Cá nhân (Placeholder)
             composable(MainAppRoutes.Profile.route) {
                 // (Chúng ta sẽ implement màn hình Profile ở đây)

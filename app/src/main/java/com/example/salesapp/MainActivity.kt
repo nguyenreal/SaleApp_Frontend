@@ -18,6 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.salesapp.ui.screens.MainScreen
 import com.example.salesapp.ui.screens.cart.CartScreen
+import com.example.salesapp.ui.screens.conversation.ConversationScreen
 import com.example.salesapp.ui.screens.detail.ProductDetailScreen
 import com.example.salesapp.ui.screens.login.LoginScreen
 import com.example.salesapp.ui.screens.register.RegisterScreen
@@ -29,7 +30,7 @@ object Routes {
     const val REGISTER = "register"
     const val HOME = "home"
     const val PRODUCT_DETAIL = "product_detail"
-
+    const val CONVERSATION = "conversation"
     const val CART = "cart"
 }
 
@@ -94,6 +95,9 @@ fun AppNavigation() {
                 },
                 onCartClick = {
                     navController.navigate(Routes.CART)
+                },
+                onChatUserClick = { userId, username ->
+                    navController.navigate("${Routes.CONVERSATION}/$userId?username=$username")
                 }
             )
         }
@@ -118,6 +122,28 @@ fun AppNavigation() {
                     navController.popBackStack()
                 }
             )
+        }
+
+        composable(
+            // Route sẽ có dạng: "conversation/5?username=Admin"
+            route = "${Routes.CONVERSATION}/{userId}?username={username}",
+        ) { backStackEntry ->
+            // Lấy tham số
+            val userId = backStackEntry.arguments?.getString("userId")?.toIntOrNull()
+            val username = backStackEntry.arguments?.getString("username")
+
+            if (userId != null && username != null) {
+                ConversationScreen(
+                    otherUserId = userId,
+                    otherUsername = username,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            } else {
+                // Xử lý lỗi (ví dụ: quay lại)
+                navController.popBackStack()
+            }
         }
     }
 }

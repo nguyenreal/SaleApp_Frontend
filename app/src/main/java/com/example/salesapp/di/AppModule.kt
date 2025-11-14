@@ -9,6 +9,7 @@ import com.example.salesapp.data.local.UserPreferencesRepository
 import com.example.salesapp.data.remote.AuthInterceptor
 import com.example.salesapp.data.remote.api.AuthService
 import com.example.salesapp.data.remote.api.CartService
+import com.example.salesapp.data.remote.api.ChatService
 import com.example.salesapp.data.remote.api.ProductService
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -92,5 +93,11 @@ object AppModule {
     @Singleton
     fun provideCartService(retrofit: Retrofit): CartService {
         return retrofit.create(CartService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideChatService(retrofit: Retrofit): ChatService {
+        return retrofit.create(ChatService::class.java)
     }
 }
