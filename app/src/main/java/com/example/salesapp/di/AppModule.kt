@@ -1,4 +1,3 @@
-// Vị trí: .../com/example/salesapp/di/AppModule.kt
 package com.example.salesapp.di
 
 import android.content.Context
@@ -9,6 +8,7 @@ import com.example.salesapp.data.local.UserPreferencesRepository
 import com.example.salesapp.data.remote.AuthInterceptor
 import com.example.salesapp.data.remote.api.AuthService
 import com.example.salesapp.data.remote.api.CartService
+import com.example.salesapp.data.remote.api.CategoryService
 import com.example.salesapp.data.remote.api.ChatService
 import com.example.salesapp.data.remote.api.ProductService
 import com.example.salesapp.data.remote.api.StoreLocationService
@@ -25,16 +25,13 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import javax.inject.Singleton
 
-// Đặt tên file lưu trữ
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_prefs")
 
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    // <<< THAY THẾ BASE_URL BẰNG ĐỊA CHỈ BACKEND CỦA BẠN >>>
-    // Nếu chạy trên máy ảo Android, dùng 10.0.2.2 để trỏ tới localhost của máy thật
-    private const val BASE_URL = "http://10.0.2.2:5281/" // << THAY PORT CỦA BẠN
+    private const val BASE_URL = "http://10.0.2.2:5281/"
 
     @Provides
     @Singleton
@@ -49,7 +46,6 @@ object AppModule {
     fun provideOkHttpClient(
         authInterceptor: AuthInterceptor
     ): OkHttpClient {
-
         val logging = HttpLoggingInterceptor()
         logging.setLevel(HttpLoggingInterceptor.Level.BODY)
 
@@ -69,7 +65,6 @@ object AppModule {
             .build()
     }
 
-    // Cung cấp DataStore (để lưu token)
     @Provides
     @Singleton
     fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
@@ -87,8 +82,6 @@ object AppModule {
     fun provideProductService(retrofit: Retrofit): ProductService {
         return retrofit.create(ProductService::class.java)
     }
-
-    // (Thêm vào bên dưới hàm provideProductService)
 
     @Provides
     @Singleton
@@ -108,4 +101,9 @@ object AppModule {
         return retrofit.create(StoreLocationService::class.java)
     }
 
+    @Provides
+    @Singleton
+    fun provideCategoryService(retrofit: Retrofit): CategoryService {
+        return retrofit.create(CategoryService::class.java)
+    }
 }

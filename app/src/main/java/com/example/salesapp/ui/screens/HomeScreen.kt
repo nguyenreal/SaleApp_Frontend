@@ -6,18 +6,21 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.salesapp.ui.components.FilterSortBottomSheet
 import com.example.salesapp.ui.components.ProductCard
 import com.example.salesapp.viewmodel.HomeViewModel
 
@@ -29,13 +32,12 @@ fun HomeScreen(
     onCartClick: () -> Unit
 ) {
     val uiState = viewModel.uiState
+    var showFilterSheet by remember { mutableStateOf(false) }
 
     Scaffold(
-        // THANH BAR TRÊN CÙNG
         topBar = {
             TopAppBar(
                 title = {
-                    // THANH TÌM KIẾM (GIẢ)
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -59,7 +61,6 @@ fun HomeScreen(
                     }
                 },
                 actions = {
-                    // NÚT GIỎ HÀNG
                     IconButton(onClick = onCartClick) {
                         Icon(
                             imageVector = Icons.Outlined.ShoppingCart,
@@ -74,72 +75,106 @@ fun HomeScreen(
         }
     ) { paddingValues ->
 
-        // --- NỘI DUNG CHÍNH (SCROLL) ---
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues), // Rất quan trọng
-            contentPadding = PaddingValues(bottom = 80.dp) // Tránh bị che bởi Bottom Nav
+                .padding(paddingValues),
+            contentPadding = PaddingValues(bottom = 80.dp)
         ) {
 
-            // 1. BANNER QUẢNG CÁO (PLACEHOLDER)
+            // FILTER & SORT BAR
             item {
-                Card(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(180.dp)
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    elevation = CardDefaults.cardElevation(4.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Banner Quảng Cáo", style = MaterialTheme.typography.titleLarge)
-                    }
-                }
-            }
-
-            // 2. DANH MỤC (PLACEHOLDER)
-            item {
-                Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                    Text(
-                        text = "Danh Mục",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(5) {
-                            Card(
-                                modifier = Modifier.size(80.dp),
-                                onClick = { /* TODO: Lọc theo danh mục */ }
-                            ) {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Text("Laptop", style = MaterialTheme.typography.bodySmall)
+                    // Current filter/sort info
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = when {
+                                uiState.filterState.selectedCategoryId != null -> {
+                                    val category = uiState.categories.find {
+                                        it.categoryID == uiState.filterState.selectedCategoryId
+                                    }
+                                    "Danh mục: ${category?.categoryName ?: "N/A"}"
                                 }
+                                else -> "Tất cả sản phẩm"
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = uiState.filterState.selectedSortOption.displayName,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray
+                        )
+                    }
+
+                    // Filter button
+                    FilledTonalButton(
+                        onClick = { showFilterSheet = true },
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FilterList,
+                            contentDescription = "Filter",
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Lọc")
+
+                        // Badge indicator nếu có active filters
+                        if (viewModel.hasActiveFilters()) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Badge {
+                                Text(
+                                    "1",
+                                    style = MaterialTheme.typography.labelSmall
+                                )
                             }
                         }
                     }
                 }
             }
 
-            // 3. TIÊU ĐỀ "GỢI Ý HÔM NAY"
-            item {
-                Text(
-                    text = "Gợi ý hôm nay",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
+            // CATEGORY CHIPS (Quick filter)
+            if (uiState.categories.isNotEmpty()) {
+                item {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // "Tất cả" chip
+                        item {
+                            FilterChip(
+                                selected = uiState.filterState.selectedCategoryId == null,
+                                onClick = { viewModel.filterByCategory(null) },
+                                label = { Text("Tất cả") }
+                            )
+                        }
+
+                        // Category chips
+                        items(uiState.categories) { category ->
+                            FilterChip(
+                                selected = uiState.filterState.selectedCategoryId == category.categoryID,
+                                onClick = { viewModel.filterByCategory(category.categoryID) },
+                                label = { Text(category.categoryName) }
+                            )
+                        }
+                    }
+                }
             }
 
-            // 4. LƯỚI SẢN PHẨM (NỘI DUNG CHÍNH)
+            // PRODUCTS GRID
             if (uiState.isLoading) {
                 item {
-                    Box(modifier = Modifier
-                        .fillParentMaxHeight(0.5f) // Chiếm 50% chiều cao còn lại
-                        .fillMaxWidth(),
+                    Box(
+                        modifier = Modifier
+                            .fillParentMaxHeight(0.5f)
+                            .fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator()
@@ -147,27 +182,55 @@ fun HomeScreen(
                 }
             } else if (uiState.errorMessage != null) {
                 item {
-                    Text(uiState.errorMessage, color = Color.Red, modifier = Modifier.padding(16.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            uiState.errorMessage,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = { viewModel.fetchProducts() }) {
+                            Text("Thử lại")
+                        }
+                    }
+                }
+            } else if (uiState.products.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillParentMaxHeight(0.5f)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                "Không tìm thấy sản phẩm",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            TextButton(onClick = { viewModel.clearFilters() }) {
+                                Text("Xóa bộ lọc")
+                            }
+                        }
+                    }
                 }
             } else {
-                // Lồng một LazyVerticalGrid bên trong LazyColumn
-                // Cần set chiều cao cố định
-
-                // <<< SỬA LỖI 1 TẠI ĐÂY: Dùng "uiState.products" >>>
                 val productCount = uiState.products.size
-                val gridHeight = ((productCount / 2) + (productCount % 2)) * 280 // Ước tính chiều cao
+                val gridHeight = ((productCount / 2) + (productCount % 2)) * 280
 
                 item {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
                         modifier = Modifier
-                            .height(gridHeight.dp) // <-- Cần thiết
+                            .height(gridHeight.dp)
                             .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
-
-                        // <<< SỬA LỖI 2 & 3 TẠI ĐÂY: Dùng "userScrollEnabled" >>>
-                        userScrollEnabled = false // <-- Rất quan trọng
+                        userScrollEnabled = false
                     ) {
                         items(uiState.products) { product ->
                             ProductCard(
@@ -179,5 +242,29 @@ fun HomeScreen(
                 }
             }
         }
+    }
+
+    // Filter/Sort Bottom Sheet
+    if (showFilterSheet) {
+        FilterSortBottomSheet(
+            categories = uiState.categories,
+            selectedCategoryId = uiState.filterState.selectedCategoryId,
+            selectedSortOption = uiState.filterState.selectedSortOption,
+            currentMinPrice = uiState.filterState.minPrice,
+            currentMaxPrice = uiState.filterState.maxPrice,
+            onCategorySelected = { categoryId ->
+                viewModel.filterByCategory(categoryId)
+            },
+            onSortSelected = { sortOption ->
+                viewModel.sortBy(sortOption)
+            },
+            onPriceRangeApplied = { minPrice, maxPrice ->
+                viewModel.filterByPriceRange(minPrice, maxPrice)
+            },
+            onClearFilters = {
+                viewModel.clearFilters()
+            },
+            onDismiss = { showFilterSheet = false }
+        )
     }
 }

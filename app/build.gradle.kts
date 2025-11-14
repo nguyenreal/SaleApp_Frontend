@@ -102,9 +102,17 @@ dependencies {
     // --- DataStore (Giữ nguyên) ---
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
+    // --- WorkManager & Hilt Work (Giữ nguyên) ---
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation("androidx.hilt:hilt-work:1.2.0")
     kapt("androidx.hilt:hilt-compiler:1.2.0")
+
+    // --- 🆕 BADGE LIBRARY: ShortcutBadger ---
+    implementation("me.leolin:ShortcutBadger:1.1.22@aar")
+
+    // --- Google Maps ---
+    implementation("com.google.maps.android:maps-compose:4.3.3")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
 
     // --- Thư viện Test (Giữ nguyên và đồng bộ BOM) ---
     testImplementation("junit:junit:4.13.2")
@@ -114,7 +122,4 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-
-    implementation("com.google.maps.android:maps-compose:4.3.3")
-    implementation("com.google.android.gms:play-services-maps:18.2.0")
 }

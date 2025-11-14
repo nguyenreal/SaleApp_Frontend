@@ -7,12 +7,10 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
 import com.example.salesapp.data.remote.dto.ProductDetailDto
 import com.example.salesapp.data.repository.CartRepository
 import com.example.salesapp.data.repository.ProductRepository
-import com.example.salesapp.workers.CartBadgeWorker
+import com.example.salesapp.utils.BadgeManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
@@ -32,13 +30,11 @@ class ProductDetailViewModel @Inject constructor(
     private val productRepository: ProductRepository,
     private val cartRepository: CartRepository,
     savedStateHandle: SavedStateHandle,
-    @ApplicationContext private val context: Context // <-- Phải có
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     var uiState by mutableStateOf(ProductDetailUiState())
         private set
-
-    private val workManager = WorkManager.getInstance(context) // <-- Phải có
 
     private val productId: Int = savedStateHandle.get<String>("productId")!!.toInt()
 
@@ -65,9 +61,9 @@ class ProductDetailViewModel @Inject constructor(
 
             result.onSuccess {
                 uiState = uiState.copy(isAddingToCart = false, addToCartSuccess = true)
-                // Lên lịch cho Worker chạy
-                triggerBadgeUpdateWorker() // <-- Phải có
 
+                // 🆕 Trigger badge update qua Worker
+                BadgeManager.triggerBadgeUpdateWorker(context)
             }.onFailure { exception ->
                 uiState = uiState.copy(isAddingToCart = false, addToCartError = exception.message)
             }
@@ -79,10 +75,5 @@ class ProductDetailViewModel @Inject constructor(
             addToCartSuccess = false,
             addToCartError = null
         )
-    }
-
-    private fun triggerBadgeUpdateWorker() {
-        val badgeUpdateWork = OneTimeWorkRequestBuilder<CartBadgeWorker>().build()
-        workManager.enqueue(badgeUpdateWork)
     }
 }

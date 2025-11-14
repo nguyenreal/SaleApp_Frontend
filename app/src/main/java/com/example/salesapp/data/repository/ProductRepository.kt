@@ -1,26 +1,43 @@
-// Vị trí: .../data/repository/ProductRepository.kt
 package com.example.salesapp.data.repository
 
 import com.example.salesapp.data.remote.api.ProductService
-import com.example.salesapp.data.remote.dto.ErrorResponse // <-- Thêm
-import com.example.salesapp.data.remote.dto.ProductDetailDto // <-- Thêm
+import com.example.salesapp.data.remote.dto.ErrorResponse
+import com.example.salesapp.data.remote.dto.ProductDetailDto
 import com.example.salesapp.data.remote.dto.ProductListItemDto
-import com.squareup.moshi.Moshi // <-- Thêm
+import com.squareup.moshi.Moshi
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class ProductRepository @Inject constructor(
     private val productService: ProductService,
-    private val moshi: Moshi // <-- Inject Moshi
+    private val moshi: Moshi
 ) {
-    suspend fun getProducts(): Result<List<ProductListItemDto>> {
+    /**
+     * Lấy danh sách sản phẩm với các tham số filter và sort
+     *
+     * @param categoryId Lọc theo category (null = tất cả)
+     * @param minPrice Giá tối thiểu
+     * @param maxPrice Giá tối đa
+     * @param sortBy Sắp xếp: "price_asc", "price_desc", "name_asc", "name_desc"
+     */
+    suspend fun getProducts(
+        categoryId: Int? = null,
+        minPrice: Double? = null,
+        maxPrice: Double? = null,
+        sortBy: String? = null
+    ): Result<List<ProductListItemDto>> {
         return try {
-            val response = productService.getProducts()
+            val response = productService.getProducts(
+                categoryId = categoryId,
+                minPrice = minPrice,
+                maxPrice = maxPrice,
+                sortBy = sortBy
+            )
+
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                // <-- SỬA LẠI: Dùng trình parse lỗi -->
                 val errorMessage = parseErrorResponse(response.errorBody()?.string())
                 Result.failure(Exception(errorMessage))
             }
@@ -29,7 +46,6 @@ class ProductRepository @Inject constructor(
         }
     }
 
-    // --- THÊM HÀM MỚI NÀY ---
     suspend fun getProductDetail(productId: Int): Result<ProductDetailDto> {
         return try {
             val response = productService.getProductById(productId)
@@ -44,7 +60,6 @@ class ProductRepository @Inject constructor(
         }
     }
 
-    // --- THÊM HÀM HELPER NÀY (Copy từ AuthRepository) ---
     private fun parseErrorResponse(errorBody: String?): String {
         if (errorBody == null) return "Lỗi không xác định"
 
