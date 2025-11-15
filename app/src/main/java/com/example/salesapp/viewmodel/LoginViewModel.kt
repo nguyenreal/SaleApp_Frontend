@@ -39,10 +39,23 @@ class LoginViewModel @Inject constructor(
     fun login() {
         if (uiState.isLoading) return // Chặn gọi nhiều lần
 
+        // <<< SỬA LỖI VALIDATION TẠI ĐÂY >>>
+        val username = uiState.username.trim()
+        val password = uiState.password.trim()
+
+        if (username.isBlank() || password.isBlank()) {
+            uiState = uiState.copy(
+                errorMessage = "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu."
+            )
+            return // Dừng, không gọi API
+        }
+        // <<< KẾT THÚC SỬA LỖI >>>
+
         uiState = uiState.copy(isLoading = true, errorMessage = null)
 
         viewModelScope.launch {
-            val result = authRepository.login(uiState.username, uiState.password)
+            // Sử dụng biến đã trim()
+            val result = authRepository.login(username, password)
 
             result.fold(
                 onSuccess = { response ->

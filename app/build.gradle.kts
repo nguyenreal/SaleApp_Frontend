@@ -63,6 +63,7 @@ android {
 // <<< KHỐI DEPENDENCIES ĐÃ ĐƯỢC SỬA LẠI HOÀN TOÀN >>>
 //
 dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.8.0")
 
     // --- Thư viện mặc định (Đã hạ version cho tương thích) ---
     implementation("androidx.core:core-ktx:1.12.0")
@@ -122,4 +123,5 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.0")
 }

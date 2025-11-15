@@ -2,7 +2,9 @@
 package com.example.salesapp.ui.screens.register
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,7 +37,9 @@ fun RegisterScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp)
-            .systemBarsPadding(),
+            .systemBarsPadding()
+            // Thêm thanh cuộn để tránh tràn màn hình khi bàn phím hiện
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -48,17 +52,25 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(48.dp))
 
+        // --- Username TextField ---
         OutlinedTextField(
             value = uiState.username,
             onValueChange = { viewModel.onUsernameChange(it) },
             label = { Text("Tên đăng nhập") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            isError = uiState.errorMessage != null
+            // SỬA LẠI: isError và supportingText
+            isError = uiState.usernameError != null,
+            supportingText = {
+                if (uiState.usernameError != null) {
+                    Text(text = uiState.usernameError, color = MaterialTheme.colorScheme.error)
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // --- Email TextField ---
         OutlinedTextField(
             value = uiState.email,
             onValueChange = { viewModel.onEmailChange(it) },
@@ -66,11 +78,18 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            isError = uiState.errorMessage != null
+            // SỬA LẠI: isError và supportingText
+            isError = uiState.emailError != null,
+            supportingText = {
+                if (uiState.emailError != null) {
+                    Text(text = uiState.emailError, color = MaterialTheme.colorScheme.error)
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // --- Password TextField ---
         OutlinedTextField(
             value = uiState.password,
             onValueChange = { viewModel.onPasswordChange(it) },
@@ -79,11 +98,38 @@ fun RegisterScreen(
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            isError = uiState.errorMessage != null
+            // SỬA LẠI: isError và supportingText
+            isError = uiState.passwordError != null,
+            supportingText = {
+                if (uiState.passwordError != null) {
+                    Text(text = uiState.passwordError, color = MaterialTheme.colorScheme.error)
+                }
+            }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // --- THÊM MỚI: Confirm Password TextField ---
+        OutlinedTextField(
+            value = uiState.confirmPassword,
+            onValueChange = { viewModel.onConfirmPasswordChange(it) },
+            label = { Text("Nhập lại mật khẩu") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            // SỬA LẠI: isError và supportingText
+            isError = uiState.confirmPasswordError != null,
+            supportingText = {
+                if (uiState.confirmPasswordError != null) {
+                    Text(text = uiState.confirmPasswordError, color = MaterialTheme.colorScheme.error)
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // Lỗi chung (từ server)
         if (uiState.errorMessage != null) {
             Text(
                 text = uiState.errorMessage,
